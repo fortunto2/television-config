@@ -1,0 +1,26 @@
+[metadata]
+name = "claude-memory"
+description = "Search all Claude Code memory: CLAUDE.md, auto-memory, rules"
+requirements = ["rg", "bat"]
+
+[source]
+command = "tv-claude-memory"
+display = "{split:\\::..2}"
+output = "{split:\\::..2}"
+
+[preview]
+command = "bat -n --color=always \"$(tv-claude-memory-resolve '{split:\\::0}')\""
+env = { BAT_THEME = "ansi" }
+offset = "{split:\\::1}"
+
+[ui]
+preview_panel = { header = "{split:\\::0}" }
+
+[keybindings]
+enter = "actions:edit"
+
+[actions.edit]
+description = "Open file in editor at line"
+command = "${EDITOR:-vim} \"+{split:\\::1}\" \"$(tv-claude-memory-resolve '{split:\\::0}')\""
+shell = "bash"
+mode = "execute"

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# List all Claude Code memory files for television channel.
+# Uses a cache that refreshes every 5 minutes.
+
+set -euo pipefail
+
+CACHE="$HOME/.cache/tv-claude-memory.txt"
+CACHE_TTL=300  # 5 minutes
+
+mkdir -p "$(dirname "$CACHE")"
+
+# Check cache freshness
+if [[ -f "$CACHE" ]]; then
+    age=$(( $(date +%s) - $(stat -f %m "$CACHE" 2>/dev/null || echo 0) ))
+    if (( age < CACHE_TTL )); then
+        cat "$CACHE"
+        exit 0
+    fi
+fi
+
+paths=()
+
+# 1. User-level CLAUDE.md and rules
+[[ -f "$HOME/.claude/CLAUDE.md" ]] && paths+=("$HOME/.claude/CLAUDE.md")
+for f in "$HOME"/.claude/rules/*.md; do
+    [[ -f "$f" ]] && paths+=("$f")
+done
+
+# 2. Auto-memory (per-project)
+while IFS= read -r -d '' f; do
+    paths+=("$f")
+done < <(find "$HOME/.claude/projects" -path "*/memory/*.md" -type f -print0 2>/dev/null)
+
+# 3. Project CLAUDE.md files
+for base in "$HOME/startups" "$HOME/projects"; do
+    [[ -d "$base" ]] || continue
+    while IFS= read -r -d '' f; do
+        paths+=("$f")
+    done < <(find "$base" -maxdepth 5 -name "CLAUDE.md" -type f -print0 2>/dev/null)
+    while IFS= read -r -d '' f; do
+        paths+=("$f")
+    done < <(find "$base" -maxdepth 6 -path "*/.claude/rules/*.md" -type f -print0 2>/dev/null)
+done
+
+if [[ ${#paths[@]} -gt 0 ]]; then
+    rg --no-heading --line-number --color=never "." "${paths[@]}" 2>/dev/null \
+        | sed -E "\
+            s|$HOME/\.claude/projects/-Users-rustam-?||; \
+            s|$HOME/\.claude/rules/|.rules/|; \
+            s|$HOME/\.claude/CLAUDE\.md|.global/CLAUDE.md|; \
+            s|$HOME/startups/|startups/|; \
+            s|$HOME/projects/|projects/|; \
+            s|/\.claude/rules/|/.rules/|; \
+            s|/\.claude/CLAUDE\.md|/CLAUDE.md|; \
+            s|/memory/|/mem/|" \
+        | tee "$CACHE" || true
+else
+    touch "$CACHE"
+fi

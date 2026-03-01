@@ -1,0 +1,6 @@
+# Standard channels managed by `tv update-channels` — don't track
+cable/*.toml
+!cable/claude-*.toml
+
+# OS
+.DS_Store

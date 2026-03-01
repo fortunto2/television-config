@@ -1,0 +1,14 @@
+[metadata]
+name = "claude-history"
+description = "Full Claude Code history (all time, 6+ months)"
+requirements = ["python3"]
+
+[source]
+command = "tv-claude-history"
+display = "{split:\t:0}  {split:\t:1}  {split:\t:2}"
+output = "{split:\t:2}"
+no_sort = true
+frecency = false
+
+[ui]
+preview_panel = { hidden = true }
