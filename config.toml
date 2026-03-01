@@ -164,6 +164,7 @@ ctrl-o = "toggle_preview"
 ctrl-h = "toggle_help"
 f12 = "toggle_status_bar"
 ctrl-l = "toggle_layout"
+ctrl-g = "toggle_match_mode"
 
 # Input field actions
 # ----------------------------------------
