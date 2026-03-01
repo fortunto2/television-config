@@ -92,7 +92,7 @@ hidden = false
 [ui.help_panel]
 # Whether to split the help panel by categories
 show_categories = true
-hidden = true
+hidden = false
 
 [ui.remote_control]
 # Whether to show channel descriptions in remote control mode
