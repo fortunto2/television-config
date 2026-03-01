@@ -48,5 +48,5 @@ with open(history_file) as f:
         sessions.append((ts_ms, ts, project, msg))
 
 sessions.sort(key=lambda x: x[0], reverse=True)
-for _, ts, proj, msg in sessions:
-    print(f"{ts}\t{proj}\t{msg}")
+for ts_ms, ts, proj, msg in sessions:
+    print(f"{ts}\t{proj}\t{ts_ms}\t{msg}")

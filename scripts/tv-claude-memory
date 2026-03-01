@@ -1,59 +1,50 @@
 #!/usr/bin/env bash
-# List all Claude Code memory files for television channel.
-# Uses a cache that refreshes every 5 minutes.
+# List Claude Code memory FILES (not lines) for television channel.
+# Output: short_path\tfull_path\tdescription
 
 set -euo pipefail
 
-CACHE="$HOME/.cache/tv-claude-memory.txt"
-CACHE_TTL=300  # 5 minutes
+HOME_DIR="$HOME"
+declare -a files=()
 
-mkdir -p "$(dirname "$CACHE")"
-
-# Check cache freshness
-if [[ -f "$CACHE" ]]; then
-    age=$(( $(date +%s) - $(stat -f %m "$CACHE" 2>/dev/null || echo 0) ))
-    if (( age < CACHE_TTL )); then
-        cat "$CACHE"
-        exit 0
-    fi
-fi
-
-paths=()
-
-# 1. User-level CLAUDE.md and rules
-[[ -f "$HOME/.claude/CLAUDE.md" ]] && paths+=("$HOME/.claude/CLAUDE.md")
-for f in "$HOME"/.claude/rules/*.md; do
-    [[ -f "$f" ]] && paths+=("$f")
+# 1. User-level
+[[ -f "$HOME_DIR/.claude/CLAUDE.md" ]] && files+=("$HOME_DIR/.claude/CLAUDE.md")
+for f in "$HOME_DIR"/.claude/rules/*.md; do
+    [[ -f "$f" ]] && files+=("$f")
 done
 
-# 2. Auto-memory (per-project)
+# 2. Auto-memory
 while IFS= read -r -d '' f; do
-    paths+=("$f")
-done < <(find "$HOME/.claude/projects" -path "*/memory/*.md" -type f -print0 2>/dev/null)
+    files+=("$f")
+done < <(find "$HOME_DIR/.claude/projects" -path "*/memory/*.md" -type f -print0 2>/dev/null)
 
-# 3. Project CLAUDE.md files
-for base in "$HOME/startups" "$HOME/projects"; do
+# 3. Project CLAUDE.md and rules
+for base in "$HOME_DIR/startups" "$HOME_DIR/projects"; do
     [[ -d "$base" ]] || continue
     while IFS= read -r -d '' f; do
-        paths+=("$f")
+        files+=("$f")
     done < <(find "$base" -maxdepth 5 -name "CLAUDE.md" -type f -print0 2>/dev/null)
     while IFS= read -r -d '' f; do
-        paths+=("$f")
+        files+=("$f")
     done < <(find "$base" -maxdepth 6 -path "*/.claude/rules/*.md" -type f -print0 2>/dev/null)
 done
 
-if [[ ${#paths[@]} -gt 0 ]]; then
-    rg --no-heading --line-number --color=never "." "${paths[@]}" 2>/dev/null \
-        | sed -E "\
-            s|$HOME/\.claude/projects/-Users-rustam-?||; \
-            s|$HOME/\.claude/rules/|.rules/|; \
-            s|$HOME/\.claude/CLAUDE\.md|.global/CLAUDE.md|; \
-            s|$HOME/startups/|startups/|; \
-            s|$HOME/projects/|projects/|; \
-            s|/\.claude/rules/|/.rules/|; \
-            s|/\.claude/CLAUDE\.md|/CLAUDE.md|; \
-            s|/memory/|/mem/|" \
-        | tee "$CACHE" || true
-else
-    touch "$CACHE"
-fi
+for f in "${files[@]}"; do
+    # Shorten path for display
+    short="$f"
+    short="${short/$HOME_DIR\/.claude\/projects\/-Users-rustam-/}"
+    short="${short/$HOME_DIR\/.claude\/projects\/-Users-rustam/~}"
+    short="${short/$HOME_DIR\/.claude\/rules\//[rules] }"
+    short="${short/$HOME_DIR\/.claude\/CLAUDE.md/[global] CLAUDE.md}"
+    short="${short/$HOME_DIR\/startups\//startups/}"
+    short="${short/$HOME_DIR\/projects\//projects/}"
+    short="${short/\/.claude\/rules\// .rules/}"
+    short="${short/\/.claude\/CLAUDE.md/ CLAUDE.md}"
+    short="${short//\/memory\//\/mem\/}"
+
+    # Extract first heading or first non-empty line as description
+    desc=$(grep -m1 "^#" "$f" 2>/dev/null | sed 's/^#* *//' || head -1 "$f" 2>/dev/null)
+    desc="${desc:0:100}"
+
+    printf '%s\t%s\t%s\n' "$short" "$f" "$desc"
+done
