@@ -1,0 +1,18 @@
+[metadata]
+name = "images"
+description = "Browse and preview images"
+requirements = ["fd", "chafa"]
+
+[source]
+command = ["fd -t f -e png -e jpg -e jpeg -e gif -e webp -e svg -e bmp -e tiff -e avif -e jxl -e ico", "fd -t f -e png -e jpg -e jpeg -e gif -e webp -e svg -e bmp -e tiff -e avif -e jxl -e ico -H"]
+
+[preview]
+command = "chafa -s 80x25 '{}'"
+
+[keybindings]
+enter = "actions:open"
+
+[actions.open]
+description = "Open image with default viewer"
+command = "open '{}'"
+mode = "execute"
